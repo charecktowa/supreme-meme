@@ -6,6 +6,8 @@ import sqlite3
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
+DATABASE = 'test.db'
+
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -18,7 +20,7 @@ def home():
 
 @app.route('/api/v1/resources/devices/all', methods=['GET'])
 def api_all():
-    conn = sqlite3.connect('test.db')
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = dict_factory
 
     cur = conn.cursor()
@@ -72,5 +74,45 @@ def api_filter():
 
     return jsonify(results)
 
+@app.route('/api/v1/resources/devices/modify', methods=['POST', 'DELETE'])
+def update_device():
+    if request.method == 'POST':
+        data = request.form
+        id_dev = data.get('id')
+        ip = data.get('device_ip')
+        campus = data.get('campus')
+        division = data.get('division')
+        location = data.get('device_location')
+
+        conn = sqlite3.connect(DATABASE)
+        print(id_dev, ip, campus, division, location)
+
+        device = [(id_dev, ip, campus, division, location)]
+
+        conn.executemany('insert into devices values (?, ?, ?, ?, ?)', device)
+        
+        conn.commit()
+
+        return "ok"
+    
+    elif request.method == 'DELETE':
+        data = request.form
+        ip = data.get('device_ip')
+        campus = data.get('campus')
+        division = data.get('division')
+        location = data.get('device_location')
+
+        conn = sqlite3.connect(DATABASE)
+        print(ip, campus, division, location)
+
+        device = [(ip, campus, division, location)]
+
+        conn.executemany('delete from devices where device_ip = ? and campus = ? and division = ? and device_location = ?', device)
+
+        conn.commit()
+        return "ok"
+    else:
+        return 'algo pasó'
+
 if __name__ == '__main__':
-    app.run(    )
+    app.run()
